@@ -47,7 +47,7 @@ export const SEAZON_ATE_LUNCH_QUESTION = {
         },
     ],
 }
-var file = require('../data/mealsS.json')
+// var file = require('../data/mealsS.json')
 
 //console.log(file["results"][0]["menu"][2].meal.fridge)
 

@@ -47,6 +47,22 @@ app.message(
     }
 )
 
+app.message(
+    /^(information).*/,
+    async ({ client, context, message, say }) => {
+        if (!isGenericMessageEvent(message)) return
+        handleUser(message.user, users, client)
+        for (const userID in users) {
+            const user = users[userID]
+            await say(
+                `<@${user.id}>, info ${user.id} + ${user.mealsByWeek} `
+            )  
+        } 
+       
+    }
+)
+
+
 app.message(/(total)/, async ({ client, context, message, say }) => {
     if (!isGenericMessageEvent(message)) return
     console.log(client.users.profile.get)
@@ -59,11 +75,32 @@ app.message(/(total)/, async ({ client, context, message, say }) => {
     for (const userID in users) {
         const user = users[userID]
         const mealsByWeekString = user.mealsByWeek > 1 ? `plats` : 'plat'
+        if (user.mealsByWeek > 0){
         await say(
             `<@${user.id}>, il te reste ${user.mealsByWeek} ${mealsByWeekString} cette semaine!`
         )
-    }
+        }else{ (user.mealsByWeek <= 0)
+        await say(
+            `<@${user.id}>, TU AS TOUT MANGE  !`
+        )
+        }
+    }       
 })
+app.message(
+    /(credit) ([0-9]*)/,
+    async ({ context, client, message, say }) => {
+        if (!isGenericMessageEvent(message)) return
+        handleUser(message.user, users, client)
+        users[message.user].credits = parseInt(context.matches[2])
+        await writeUsers(users)
+        await say(
+            ` <@${message.user}>,  ${
+                users[message.user].credits
+            } credit ajouté pour la semaine`
+        )
+    }
+)
+
 
 app.message(
     /(commande|commandé) ([0-9]*)/,
@@ -77,7 +114,20 @@ app.message(
                 users[message.user].mealsByWeek
             } plats cette semaine!`
         )
+        const total = users[message.user].credits - users[message.user].mealsByWeek 
+        await say(
+            `voila <@${message.user}> ${
+                total
+            } nombre de credits restant !`
+        )
+         if ( users[message.user].mealsByWeek > users[message.user].credits){
+            await say(
+                `voila <@${message.user}> TU ES ENDETTE DE  ${
+                    total
+                } CREDIT `)
+        }
     }
+    
 )
 
 app.message(
@@ -95,12 +145,26 @@ app.message(
     }
 )
 
+app.message(
+    /^(help).*/,
+    async ({ client, context, message, say }) => {
+        if (!isGenericMessageEvent(message)) return
+        await say ("voici les commandes disponible : \n hi / hello / hey / wesh /yo / salut \n total \n commande / commandé \n mange / mangé")
+        const greeting = context.matches[1]
+        await say(`${greeting}, <@${message.user}>`)
+    }
+)
+
+
+
+
+
 app.message(/(menu)/, async ({ client, message, say }) => {
     if (!isGenericMessageEvent(message)) return
     handleUser(message.user, users, client)
     // TODO: schedule to fetch meals from Seazon and get the last week's meals from cache
     if (!weekMenu || new Date(weekMenu.date).valueOf() > new Date().valueOf()) {
-        const _weekMenu = await readWeekMenu('2022-02-28')
+        const _weekMenu = await readWeekMenu('2022-05-19')
 
         weekMenu = _weekMenu
     }

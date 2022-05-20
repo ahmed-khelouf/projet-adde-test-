@@ -46,6 +46,8 @@ export const fetchMealsFromSeazon = async (
         meals,
     }
 }
+ 
+
 
 const parseMeals = (data: SeazonRawData): Meal[] => {
     const rawMeals = data.results.reduce<RawMeal[]>((acc, cur) => {
@@ -74,3 +76,4 @@ const parseMeals = (data: SeazonRawData): Meal[] => {
         }
     })
 }
+
