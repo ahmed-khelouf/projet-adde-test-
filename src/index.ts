@@ -17,10 +17,12 @@ import {
 } from './managers/SaveManager'
 import { mealToBlock } from './MessageBlock'
 import { WeekMenu } from './models/WeekMenu'
+import { fetchMealsFromSeazon } from './services/SlackService'
+import { DateTime } from 'luxon'
+import { getMenuForDate } from './managers/MenuManager'
 
 // GlobalVar
 let users: Record<string, User> = {}
-let weekMenu: WeekMenu
 
 // Initializes your app with your bot token and signing secret
 const app = new App({
@@ -47,21 +49,14 @@ app.message(
     }
 )
 
-app.message(
-    /^(information).*/,
-    async ({ client, context, message, say }) => {
-        if (!isGenericMessageEvent(message)) return
-        handleUser(message.user, users, client)
-        for (const userID in users) {
-            const user = users[userID]
-            await say(
-                `<@${user.id}>, info ${user.id} + ${user.mealsByWeek} `
-            )  
-        } 
-       
+app.message(/^(information).*/, async ({ client, context, message, say }) => {
+    if (!isGenericMessageEvent(message)) return
+    handleUser(message.user, users, client)
+    for (const userID in users) {
+        const user = users[userID]
+        await say(`<@${user.id}>, info ${user.id} + ${user.mealsByWeek} `)
     }
-)
-
+})
 
 app.message(/(total)/, async ({ client, context, message, say }) => {
     if (!isGenericMessageEvent(message)) return
@@ -75,32 +70,27 @@ app.message(/(total)/, async ({ client, context, message, say }) => {
     for (const userID in users) {
         const user = users[userID]
         const mealsByWeekString = user.mealsByWeek > 1 ? `plats` : 'plat'
-        if (user.mealsByWeek > 0){
-        await say(
-            `<@${user.id}>, il te reste ${user.mealsByWeek} ${mealsByWeekString} cette semaine!`
-        )
-        }else{ (user.mealsByWeek <= 0)
-        await say(
-            `<@${user.id}>, TU AS TOUT MANGE  !`
-        )
+        if (user.mealsByWeek > 0) {
+            await say(
+                `<@${user.id}>, il te reste ${user.mealsByWeek} ${mealsByWeekString} cette semaine!`
+            )
+        } else {
+            user.mealsByWeek <= 0
+            await say(`<@${user.id}>, TU AS TOUT MANGE  !`)
         }
-    }       
-})
-app.message(
-    /(credit) ([0-9]*)/,
-    async ({ context, client, message, say }) => {
-        if (!isGenericMessageEvent(message)) return
-        handleUser(message.user, users, client)
-        users[message.user].credits = parseInt(context.matches[2])
-        await writeUsers(users)
-        await say(
-            ` <@${message.user}>,  ${
-                users[message.user].credits
-            } credit ajouté pour la semaine`
-        )
     }
-)
-
+})
+app.message(/(credit) ([0-9]*)/, async ({ context, client, message, say }) => {
+    if (!isGenericMessageEvent(message)) return
+    handleUser(message.user, users, client)
+    users[message.user].credits = parseInt(context.matches[2])
+    await writeUsers(users)
+    await say(
+        ` <@${message.user}>,  ${
+            users[message.user].credits
+        } credit ajouté pour la semaine`
+    )
+})
 
 app.message(
     /(commande|commandé) ([0-9]*)/,
@@ -114,20 +104,17 @@ app.message(
                 users[message.user].mealsByWeek
             } plats cette semaine!`
         )
-        const total = users[message.user].credits - users[message.user].mealsByWeek 
+        const total =
+            users[message.user].credits - users[message.user].mealsByWeek
         await say(
-            `voila <@${message.user}> ${
-                total
-            } nombre de credits restant !`
+            `voila <@${message.user}> ${total} nombre de credits restant !`
         )
-         if ( users[message.user].mealsByWeek > users[message.user].credits){
+        if (users[message.user].mealsByWeek > users[message.user].credits) {
             await say(
-                `voila <@${message.user}> TU ES ENDETTE DE  ${
-                    total
-                } CREDIT `)
+                `voila <@${message.user}> TU ES ENDETTE DE  ${total} CREDIT `
+            )
         }
     }
-    
 )
 
 app.message(
@@ -145,75 +132,74 @@ app.message(
     }
 )
 
+app.message(/^(help).*/, async ({ client, context, message, say }) => {
+    if (!isGenericMessageEvent(message)) return
+    await say(
+        'voici les commandes disponible : \n hi / hello / hey / wesh /yo / salut \n total \n commande / commandé \n mange / mangé'
+    )
+    const greeting = context.matches[1]
+    await say(`${greeting}, <@${message.user}>`)
+})
+
 app.message(
-    /^(help).*/,
-    async ({ client, context, message, say }) => {
+    /menu( ([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9]))?/,
+    async ({ client, message, context, say }) => {
         if (!isGenericMessageEvent(message)) return
-        await say ("voici les commandes disponible : \n hi / hello / hey / wesh /yo / salut \n total \n commande / commandé \n mange / mangé")
-        const greeting = context.matches[1]
-        await say(`${greeting}, <@${message.user}>`)
+        handleUser(message.user, users, client)
+        const regexMatches: RegExpMatchArray = context.matches
+        const matchingInput = regexMatches.input
+        const requestedDateRegexMatches = matchingInput?.match(
+            /([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])/
+        )
+        const requestedDate =
+            requestedDateRegexMatches && requestedDateRegexMatches.length > 0
+                ? DateTime.fromISO(requestedDateRegexMatches[0])
+                : undefined
+        const weekMenu = await getMenuForDate(requestedDate)
+        const rawBlocks = weekMenu.meals.map((meal) =>
+            mealToBlock(weekMenu.date, meal, users)
+        )
+        rawBlocks.forEach(async (block) => {
+            await say({ blocks: block, text: 'Menu de la semaine' })
+        })
     }
 )
 
+app.action(
+    /addMeal-(([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9]))/,
+    async ({ body, action, client, context, ack, respond, say }) => {
+        await ack()
 
-
-
-
-app.message(/(menu)/, async ({ client, message, say }) => {
-    if (!isGenericMessageEvent(message)) return
-    handleUser(message.user, users, client)
-    // TODO: schedule to fetch meals from Seazon and get the last week's meals from cache
-    if (!weekMenu || new Date(weekMenu.date).valueOf() > new Date().valueOf()) {
-        const _weekMenu = await readWeekMenu('2022-05-19')
-
-        weekMenu = _weekMenu
-    }
-    const rawBlocks = weekMenu.meals.map((meal) => mealToBlock(meal, users))
-    rawBlocks.forEach(async (block) => {
-        await say({ blocks: block, text: 'Menu de la semaine' })
-    })
-    // let blocks = rawBlocks.reduce((acc, curr) => [...acc, ...curr], [])
-    // const headerBlocks = [
-    //     TEXT_BLOCK(`Voila <@${message.user}>! Voici les plats de la semaine:`),
-    //     DIVIDER_BLOCK,
-    // ]
-    // blocks = [...headerBlocks, ...blocks]
-    // let chunksBlocks = []
-    // for (let i = 0; i < blocks.length; i += 4 * 12) {
-    //     chunksBlocks.push(blocks.slice(i, i + 4 * 12))
-    // }
-    // // chunksBlocks[0] = [...headerBlocks, ...chunksBlocks[0]]
-    // for (const block of chunksBlocks) {
-    //     await say({ blocks: block, text: 'Menu de la semaine' })
-    // }
-})
-
-app.action('addMeal', async ({ body, action, client, ack, respond, say }) => {
-    await ack()
-    const currentUser = body.user.id
-    if (isBlockButtonElementAction(action)) {
-        for (let index = 0; index < weekMenu.meals.length; index++) {
-            const aMeal = weekMenu.meals[index]
-            if (aMeal.id === action.value) {
-                // on a trouvé le plat
-                if (aMeal.users.includes(currentUser)) {
-                    // on supprime l'utilisateur du plat
-                    aMeal.users = aMeal.users.filter(
-                        (user: string) => user !== currentUser
-                    )
-                } else {
-                    // on ajoute l'utilisateur au plat
-                    aMeal.users.push(currentUser)
+        const currentUser = body.user.id
+        const targetMenuDate = context.actionIdMatches[1]
+        const targetMenuISODate = DateTime.fromISO(targetMenuDate)
+        const _weekMenu = await getMenuForDate(targetMenuISODate)
+        if (isBlockButtonElementAction(action)) {
+            for (let index = 0; index < _weekMenu.meals.length; index++) {
+                const aMeal = _weekMenu.meals[index]
+                if (aMeal.id === action.value) {
+                    // on a trouvé le plat
+                    if (aMeal.users.includes(currentUser)) {
+                        // on supprime l'utilisateur du plat
+                        aMeal.users = aMeal.users.filter(
+                            (user: string) => user !== currentUser
+                        )
+                    } else {
+                        // on ajoute l'utilisateur au plat
+                        aMeal.users.push(currentUser)
+                    }
+                    // on enregistre les modifications
+                    await writeWeekMenu(_weekMenu)
+                    // on envoie un message à l'utilisateur
+                    await respond({
+                        blocks: mealToBlock(_weekMenu.date, aMeal, users),
+                    })
                 }
-                // on enregistre les modifications
-                await writeWeekMenu(weekMenu)
-                // on envoie un message à l'utilisateur
-                await respond({ blocks: mealToBlock(aMeal, users) })
             }
         }
+        // rajoute l'utilisateur pour le plat selectionnée: voir
     }
-    // rajoute l'utilisateur pour le plat selectionnée: voir
-})
+)
 
 app.action(
     /seazon_lunch_eat_(yes|no)_id/,

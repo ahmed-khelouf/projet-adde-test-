@@ -143,14 +143,22 @@ export const SEAZON_GIVE_LUNCH_DYN = {
     ],
 }
 
-export const mealToBlock = (meal: Meal, users: Record<string, User>) => {
+export const mealToBlock = (
+    mealWeekDate: string,
+    meal: Meal,
+    users: Record<string, User>
+) => {
     const orderedByUsers =
         meal.users?.map((userID) => users[userID]).filter((user) => user) || []
     return [
         TEXT_WITH_IMAGE_BLOCK(meal.name, meal.imageUrl),
         TEXT_BLOCK(meal.description),
         ACTION_BLOCK([
-            { text: 'Je veux celui-ci', value: meal.id, id: 'addMeal' },
+            {
+                text: 'Je veux celui-ci',
+                value: meal.id,
+                id: `addMeal-${mealWeekDate}`,
+            },
         ]),
         CONTEXT_BLOCK(orderedByUsers),
         DIVIDER_BLOCK,
