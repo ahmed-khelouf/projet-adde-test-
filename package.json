@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "description": "",
     "main": "index.js",
+    
     "scripts": {
         "start": "ts-node src/index.ts"
     },
@@ -16,6 +17,7 @@
     "dependencies": {
         "@slack/bolt": "^3.11.1",
         "dotenv": "^16.0.1",
+        "googleapis": "^39.2.0",
         "luxon": "^2.4.0"
     }
 }

@@ -37,7 +37,94 @@ const startMyApp = async () => {
     await app.start(process.env.PORT || 1234)
 
     console.log('⚡️ Bolt app is running!')
+    
 }
+
+
+//  app.start()
+//  .catch(console.error);
+
+
+        // app.event('app_home_opened', async ({ event, say }) => {  
+        //     await say(`BIENVENUE :smiley:<@${event.user}>!:smiley:`);
+        // });
+       
+
+
+        // const SlackBot = require('slackbots')
+        // const bot = new SlackBot ({
+        //     token :process.env.SLACK_BOT_TOKEN,
+        //     name: ' Seazon',
+        // })
+        // bot.on('start' , () => {
+        //     const params = {
+        //         icon_emoji : ':smiley:',
+        //     }
+
+        //     bot.postMessageToChannel(
+        //         'Seazon',
+        //         "Salut",
+        //         params,
+        //     )
+        // })
+
+        
+   // Listen for users opening your App Home
+app.event('app_home_opened', async ({ event, client, logger }) => {
+    try {
+      // Call views.publish with the built-in client
+      const result = await client.views.publish({
+        // Use the user ID associated with the event
+        user_id: event.user,
+        view: {
+          // Home tabs must be enabled in your app configuration page under "App Home"
+          "type": "home",
+          blocks: [
+            {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*Bienvenue <@" + event.user + "> :house:*"
+                }
+              },
+            {
+                "type": "section",
+                "text": {
+                    "type": "plain_text",
+                    "text": "Du lundi au mercredi, vous aurez la possibilité de choisir vos plats.",
+                    "emoji": true
+                }
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "Cliquer sur le bouton pour voir le menu sur le site ."
+                },
+                "accessory": {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Click Me",
+                        "emoji": true
+                    },
+                    "value": "click_me_123",
+                    "url": "https://seazon.fr/menu",
+                    "action_id": "button-action"
+                }
+            }
+        ]
+    }
+});
+      logger.info(result);
+    }
+    catch (error) {
+      logger.error(error);
+    }
+  });         
+              
+             
+       
 
 app.message(
     /^(hi|hello|hey|wesh|yo|salut).*/,
@@ -48,6 +135,15 @@ app.message(
         await say(`${greeting}, <@${message.user}>`)
     }
 )
+// app.event(
+//     /^(t).*/,
+//     async ({ client, context, message, say }) => {
+//         if (!isGenericMessageEvent(message)) return
+//         handleUser(message, users, client)
+//         const greeting = context.matches[1]
+//         await say(`${greeting}, <@${message}>`)
+//     }
+// )
 
 app.message(/^(information).*/, async ({ client, context, message, say }) => {
     if (!isGenericMessageEvent(message)) return
@@ -58,6 +154,22 @@ app.message(/^(information).*/, async ({ client, context, message, say }) => {
     }
 })
 
+
+// app.event('app_home_opened', async ({ event, say }) => {  
+//     for (const userID in users) {
+//         const user = users[userID]
+//         const mealsByWeekString = user.mealsByWeek > 1 ? `plats` : 'plat'
+//         if (user.mealsByWeek > 0) {
+//             await say(
+//                 `<@${user.id}>, il te reste ${user.mealsByWeek} ${mealsByWeekString} cette semaine!`
+//             )
+//         } else {
+//             user.mealsByWeek <= 0
+//             await say(`<@${user.id}>, TU AS TOUT MANGE  !`)
+//         }
+//     }
+
+// });
 app.message(/(total)/, async ({ client, context, message, say }) => {
     if (!isGenericMessageEvent(message)) return
     console.log(client.users.profile.get)
@@ -229,3 +341,4 @@ app.action(
 )
 
 startMyApp()
+
