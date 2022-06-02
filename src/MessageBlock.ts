@@ -140,6 +140,19 @@ export const SEAZON_GIVE_LUNCH_DYN = {
                 },
             ],
         },
+        {
+			"dispatch_action": true,
+			"type": "input",
+			"element": {
+				"type": "plain_text_input",
+				"action_id": "plain_text_input-action"
+			},
+			"label": {
+				"type": "plain_text",
+				"text": "Label",
+				"emoji": true
+			}
+		}
     ],
 }
 
@@ -158,6 +171,7 @@ export const mealToBlock = (
                 text: 'Je veux celui-ci',
                 value: meal.id,
                 id: `addMeal-${mealWeekDate}`,
+            
             },
         ]),
         CONTEXT_BLOCK(orderedByUsers),

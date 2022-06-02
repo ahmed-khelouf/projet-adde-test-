@@ -16,7 +16,7 @@ import {
     writeWeekMenu,
 } from './managers/SaveManager'
 import { mealToBlock } from './MessageBlock'
-import { WeekMenu } from './models/WeekMenu'
+import { WeekMenu} from './models/WeekMenu'
 import { fetchMealsFromSeazon } from './services/SlackService'
 import { DateTime } from 'luxon'
 import { getMenuForDate } from './managers/MenuManager'
@@ -48,6 +48,19 @@ const startMyApp = async () => {
         // app.event('app_home_opened', async ({ event, say }) => {  
         //     await say(`BIENVENUE :smiley:<@${event.user}>!:smiley:`);
         // });
+
+        // app.event('app_home_opened', async ({ event, say }) => {  
+        //     const total =
+        //     users[event.user].credits - users[event.user].mealsByWeek
+        // await say(
+        //     `voila <@${event.user}> ${total} nombre de credits restant !`
+        // )
+        // if (users[event.user].mealsByWeek > users[event.user].credits) {
+        //     await say(
+        //         `voila <@${event.user}> TU ES ENDETTE DE  ${total} CREDIT `
+        //     )
+        // }
+        // });
        
 
 
@@ -69,15 +82,13 @@ const startMyApp = async () => {
         // })
 
         
-   // Listen for users opening your App Home
+   
 app.event('app_home_opened', async ({ event, client, logger }) => {
     try {
-      // Call views.publish with the built-in client
+      
       const result = await client.views.publish({
-        // Use the user ID associated with the event
         user_id: event.user,
         view: {
-          // Home tabs must be enabled in your app configuration page under "App Home"
           "type": "home",
           blocks: [
             {
@@ -112,8 +123,10 @@ app.event('app_home_opened', async ({ event, client, logger }) => {
                     "url": "https://seazon.fr/menu",
                     "action_id": "button-action"
                 }
-            }
+            },
+           
         ]
+        
     }
 });
       logger.info(result);
@@ -121,10 +134,51 @@ app.event('app_home_opened', async ({ event, client, logger }) => {
     catch (error) {
       logger.error(error);
     }
-  });         
-              
-             
-       
+  });
+  
+  app.event('app_home_opened', async ({ client }) => {
+      
+ 
+const channelId = "D03F4CQGPPH"
+try {
+  
+  const result =  client.chat.postMessage({
+    channel: channelId,
+    text: "Bonjour test fonctionnement "
+  });
+
+  console.log(result);
+}
+catch (error) {
+  console.error(error);
+}
+})
+
+
+  
+// // Unix timestamp for tomorrow morning at 9AM
+// const aujourdhui = new Date(2022-6-2);
+// aujourdhui.setDate;
+// aujourdhui.setHours(14, 20, 0);
+
+// // Channel you want to post the message to
+
+// const channel = "D03F4CQGPPH";
+// app.event('scheduleMessage' , async ({ client }) => {
+// try {
+//   // Call the chat.scheduleMessage method using the WebClient
+//   const result = client.chat.scheduleMessage({
+//     channel: channel,
+//     text: "bonjour bienvenu choisi ton menu ",
+//     // Time to post message, in Unix Epoch timestamp format
+//     post_at: aujourdhui.getTime() 
+//   });
+
+//   console.log(result);
+// }
+// catch (error) {
+//   console.error(error);
+// }});  
 
 app.message(
     /^(hi|hello|hey|wesh|yo|salut).*/,
@@ -254,6 +308,7 @@ app.message(/^(help).*/, async ({ client, context, message, say }) => {
 })
 
 app.message(
+    
     /menu( ([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9]))?/,
     async ({ client, message, context, say }) => {
         if (!isGenericMessageEvent(message)) return
@@ -276,6 +331,7 @@ app.message(
         })
     }
 )
+
 
 app.action(
     /addMeal-(([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9]))/,
@@ -341,4 +397,5 @@ app.action(
 )
 
 startMyApp()
+
 
