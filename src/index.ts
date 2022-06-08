@@ -16,7 +16,7 @@ import {
     writeWeekMenu,
 } from './managers/SaveManager'
 import { mealToBlock } from './MessageBlock'
-import { WeekMenu} from './models/WeekMenu'
+import { WeekMenu } from './models/WeekMenu'
 import { fetchMealsFromSeazon } from './services/SlackService'
 import { DateTime } from 'luxon'
 import { getMenuForDate } from './managers/MenuManager'
@@ -37,148 +37,153 @@ const startMyApp = async () => {
     await app.start(process.env.PORT || 1234)
 
     console.log('⚡️ Bolt app is running!')
-    
+
 }
 
 
 //  app.start()
 //  .catch(console.error);
 
-
-        // app.event('app_home_opened', async ({ event, say }) => {  
-        //     await say(`BIENVENUE :smiley:<@${event.user}>!:smiley:`);
-        // });
-
-        // app.event('app_home_opened', async ({ event, say }) => {  
-        //     const total =
-        //     users[event.user].credits - users[event.user].mealsByWeek
-        // await say(
-        //     `voila <@${event.user}> ${total} nombre de credits restant !`
-        // )
-        // if (users[event.user].mealsByWeek > users[event.user].credits) {
-        //     await say(
-        //         `voila <@${event.user}> TU ES ENDETTE DE  ${total} CREDIT `
-        //     )
-        // }
-        // });
-       
+// WELCOME
+// app.event('app_home_opened', async ({ event, say }) => {  
+//     await say(`BIENVENUE :smiley:<@${event.user}>!:smiley:`);
+// });
 
 
-        // const SlackBot = require('slackbots')
-        // const bot = new SlackBot ({
-        //     token :process.env.SLACK_BOT_TOKEN,
-        //     name: ' Seazon',
-        // })
-        // bot.on('start' , () => {
-        //     const params = {
-        //         icon_emoji : ':smiley:',
-        //     }
-
-        //     bot.postMessageToChannel(
-        //         'Seazon',
-        //         "Salut",
-        //         params,
-        //     )
-        // })
-
-        
-   
-app.event('app_home_opened', async ({ event, client, logger }) => {
-    try {
-      
-      const result = await client.views.publish({
-        user_id: event.user,
-        view: {
-          "type": "home",
-          blocks: [
-            {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "*Bienvenue <@" + event.user + "> :house:*"
-                }
-              },
-            {
-                "type": "section",
-                "text": {
-                    "type": "plain_text",
-                    "text": "Du lundi au mercredi, vous aurez la possibilité de choisir vos plats.",
-                    "emoji": true
-                }
-            },
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": "Cliquer sur le bouton pour voir le menu sur le site ."
-                },
-                "accessory": {
-                    "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": "Click Me",
-                        "emoji": true
-                    },
-                    "value": "click_me_123",
-                    "url": "https://seazon.fr/menu",
-                    "action_id": "button-action"
-                }
-            },
-           
-        ]
-        
-    }
-});
-      logger.info(result);
-    }
-    catch (error) {
-      logger.error(error);
-    }
-  });
-  
-  app.event('app_home_opened', async ({ client }) => {
-      
- 
-const channelId = "D03F4CQGPPH"
-try {
-  
-  const result =  client.chat.postMessage({
-    channel: channelId,
-    text: "Bonjour test fonctionnement "
-  });
-
-  console.log(result);
-}
-catch (error) {
-  console.error(error);
-}
-})
+// TEST TOTAL CREDIT
+// app.event('app_home_opened', async ({ event, say }) => {  
+//     const total =
+//     users[event.user].credits - users[event.user].mealsByWeek
+// await say(
+//     `voila <@${event.user}> ${total} nombre de credits restant !`
+// )
+// if (users[event.user].mealsByWeek > users[event.user].credits) {
+//     await say(
+//         `voila <@${event.user}> TU ES ENDETTE DE  ${total} CREDIT `
+//     )
+// }
+// });
 
 
-  
-// // Unix timestamp for tomorrow morning at 9AM
-// const aujourdhui = new Date(2022-6-2);
-// aujourdhui.setDate;
-// aujourdhui.setHours(14, 20, 0);
 
-// // Channel you want to post the message to
-
-// const channel = "D03F4CQGPPH";
-// app.event('scheduleMessage' , async ({ client }) => {
-// try {
-//   // Call the chat.scheduleMessage method using the WebClient
-//   const result = client.chat.scheduleMessage({
-//     channel: channel,
-//     text: "bonjour bienvenu choisi ton menu ",
-//     // Time to post message, in Unix Epoch timestamp format
-//     post_at: aujourdhui.getTime() 
+// MENU        
+// app.event('app_home_opened', async ({ event, client , say ,   logger }) => {
+//     try {
+//       const result = await client.views.publish({
+//         user_id: event.user,
+//         view: {
+//           "type": "home",
+//           blocks: [
+//             {
+//                 "type": "section",
+//                 "text": {
+//                   "type": "mrkdwn",
+//                   "text": "*Bienvenue <@" + event.user + "> :house:*"
+//                 }
+//               },
+//             {
+//                 "type": "section",
+//                 "text": {
+//                     "type": "plain_text",
+//                     "text": "Du lundi au mercredi, vous aurez la possibilité de choisir vos plats."  ,
+//                     "emoji": true
+//                 }
+//             },
+//             {
+//                 "type": "section",
+//                 "text": {
+//                     "type": "mrkdwn",
+//                     "text": "Cliquer sur le bouton pour voir le menu sur le site ."
+//                 },
+//                 "accessory": {
+//                     "type": "button",
+//                     "text": {
+//                         "type": "plain_text",
+//                         "text": "Click Me",
+//                         "emoji": true
+//                     },
+//                     "value": "click_me_123",
+//                     "url": "https://seazon.fr/menu",
+//                     "action_id": "button-action"
+//                 }
+//             },
+//             {
+//                 "dispatch_action": true,
+//                 "type": "input",
+//                 "element": {
+//                     "type": "plain_text_input",
+//                     "action_id": "plain_text_input-action"
+//                 },
+//                 "label": {
+//                     "type": "plain_text",
+//                     "text": "Label",
+//                     "emoji": true
+//                 }
+//             }
+//         ]
+//     }
+// });
+//       logger.info(result);
+//     }
+//     catch (error) {
+//       logger.error(error);
+//     }
 //   });
 
-//   console.log(result);
-// }
-// catch (error) {
-//   console.error(error);
-// }});  
+
+
+app.event('app_home_opened', async ({ client, payload }) => {
+    console.log(payload)
+    if (payload.tab === 'messages') {
+        const channelId = "D03F4CQGPPH"
+        try {
+
+            // const result = client.chat.postMessage({
+            //     channel: channelId,
+            //     text: "TEST"
+            // });
+
+            // console.log(result);
+        }
+        catch (error) {
+            console.error(error);
+        }
+    }
+
+})
+
+const eachWednesday = async () => {
+    try {
+        const channel = "D03F4CQGPPH";
+
+        const aujourdhui = new Date();
+        await app.client.chat.postMessage({
+            channel,
+            text: `${new Date}`
+        });
+        aujourdhui.setMinutes(aujourdhui.getMinutes() + 1)
+        // aujourdhui.setHours(9, 50, 0);
+        const test = Math.floor(aujourdhui.getTime() / 1000)
+        await app.client.chat.scheduleMessage({
+            channel: channel,
+            text: "bonjour test menu: " + aujourdhui,
+            post_at: test
+        });
+eachWednesday()
+    }
+    catch (error) {
+        console.error(error);
+        console.error((error as any).data);
+    };
+
+}
+
+eachWednesday()
+
+
+
+
+
 
 app.message(
     /^(hi|hello|hey|wesh|yo|salut).*/,
@@ -252,8 +257,7 @@ app.message(/(credit) ([0-9]*)/, async ({ context, client, message, say }) => {
     users[message.user].credits = parseInt(context.matches[2])
     await writeUsers(users)
     await say(
-        ` <@${message.user}>,  ${
-            users[message.user].credits
+        ` <@${message.user}>,  ${users[message.user].credits
         } credit ajouté pour la semaine`
     )
 })
@@ -266,8 +270,7 @@ app.message(
         users[message.user].mealsByWeek = parseInt(context.matches[2])
         await writeUsers(users)
         await say(
-            `voila <@${message.user}>, tu as commandé ${
-                users[message.user].mealsByWeek
+            `voila <@${message.user}>, tu as commandé ${users[message.user].mealsByWeek
             } plats cette semaine!`
         )
         const total =
@@ -291,8 +294,7 @@ app.message(
         users[message.user].mealsByWeek -= parseInt(context.matches[2])
 
         await say(
-            `voila <@${message.user}>, il te reste ${
-                users[message.user].mealsByWeek
+            `voila <@${message.user}>, il te reste ${users[message.user].mealsByWeek
             } plats cette semaine!`
         )
     }
@@ -308,7 +310,7 @@ app.message(/^(help).*/, async ({ client, context, message, say }) => {
 })
 
 app.message(
-    
+
     /menu( ([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9]))?/,
     async ({ client, message, context, say }) => {
         if (!isGenericMessageEvent(message)) return
