@@ -20,6 +20,8 @@ import { WeekMenu } from './models/WeekMenu'
 import { fetchMealsFromSeazon } from './services/SlackService'
 import { DateTime } from 'luxon'
 import { getMenuForDate } from './managers/MenuManager'
+import { ACTION_BLOCK, CONTEXT_BLOCK, DIVIDER_BLOCK, TEXT_BLOCK, TEXT_WITH_IMAGE_BLOCK } from './utils/SlackBlockHelpers'
+import { Meal } from './models/Meal'
 
 // GlobalVar
 let users: Record<string, User> = {}
@@ -40,13 +42,60 @@ const startMyApp = async () => {
 
 }
 
+// toc to c
+// app.message('toc toc', async ({ say }) => {
+//     await say(`qui est la ?`);
+//   })
 
-//  app.start()
-//  .catch(console.error);
 
-// WELCOME
-// app.event('app_home_opened', async ({ event, say }) => {  
-//     await say(`BIENVENUE :smiley:<@${event.user}>!:smiley:`);
+//   app.event('app_home_opened',
+//        async ({ client, message, event ,  context, say , payload }) => {
+       
+//         if (payload.tab === 'messages') { 
+//         const weekMenu = await getMenuForDate()
+//         const rawBlocks = weekMenu.meals.map((meal) =>
+//             mealToBlock(weekMenu.date, meal, users)
+//         )
+//         rawBlocks.forEach(async (block) => {
+//             await say({ blocks: block, text: 'Menu de la semaine' })
+//         })
+//         console.log(weekMenu)
+//     }
+    
+// }
+
+// )
+
+
+
+//   app.action('button-action', async ({ ack, say }) => {
+//     // Acknowledge action request
+//     await ack();
+//     await say('Request approved 👍');
+//   });
+
+  // messsage publié apres avoir ecrie toto 
+  app.message('toto', async ({ message, client, logger }) => {
+    try {
+        const aujourdhui = new Date();
+        aujourdhui.setHours(11, 0, 0);
+        const test = Math.floor(aujourdhui.getTime() / 1000)
+      
+      const result = await client.chat.scheduleMessage({
+        channel: message.channel,
+        post_at: test,
+        text: 'bonne vacance'
+      });
+    }
+    catch (error) {
+      logger.error(error);
+    }
+  });
+
+// // WELCOME
+// app.event('app_home_opened', async ({ event, say , payload }) => {
+//     if (payload.tab === 'messages') {  
+//     await say(`BIENVENUE :smiley:<@${event.user}>!:smiley:`);}
 // });
 
 
@@ -67,75 +116,67 @@ const startMyApp = async () => {
 
 
 // MENU        
-// app.event('app_home_opened', async ({ event, client , say ,   logger }) => {
-//     try {
-//       const result = await client.views.publish({
-//         user_id: event.user,
-//         view: {
-//           "type": "home",
-//           blocks: [
-//             {
-//                 "type": "section",
-//                 "text": {
-//                   "type": "mrkdwn",
-//                   "text": "*Bienvenue <@" + event.user + "> :house:*"
-//                 }
-//               },
-//             {
-//                 "type": "section",
-//                 "text": {
-//                     "type": "plain_text",
-//                     "text": "Du lundi au mercredi, vous aurez la possibilité de choisir vos plats."  ,
-//                     "emoji": true
-//                 }
-//             },
-//             {
-//                 "type": "section",
-//                 "text": {
-//                     "type": "mrkdwn",
-//                     "text": "Cliquer sur le bouton pour voir le menu sur le site ."
-//                 },
-//                 "accessory": {
-//                     "type": "button",
-//                     "text": {
-//                         "type": "plain_text",
-//                         "text": "Click Me",
-//                         "emoji": true
-//                     },
-//                     "value": "click_me_123",
-//                     "url": "https://seazon.fr/menu",
-//                     "action_id": "button-action"
-//                 }
-//             },
-//             {
-//                 "dispatch_action": true,
-//                 "type": "input",
-//                 "element": {
-//                     "type": "plain_text_input",
-//                     "action_id": "plain_text_input-action"
-//                 },
-//                 "label": {
-//                     "type": "plain_text",
-//                     "text": "Label",
-//                     "emoji": true
-//                 }
-//             }
-//         ]
-//     }
-// });
-//       logger.info(result);
-//     }
-//     catch (error) {
-//       logger.error(error);
-//     }
-//   });
+app.event('app_home_opened', async ({ event, client , context , say , payload,   logger }) => {
+    try {
+       
+            // const weekMenu = await getMenuForDate()
+            // const rawBlocks = weekMenu.meals.map((meal) =>
+            //     mealToBlock(weekMenu.date, meal, users)
+            // )
+            // rawBlocks.forEach(async (block) => {
+            //     await say({ blocks: block, text: 'Menu de la semaine' })
+            // })
+            
+    
+          
+      const result = await client.views.publish({
+          
+        user_id: event.user,
+        
+        view: {
+          "type": "home",
+          blocks: [
+            {
+                "type": "section",
+                "text": {
+                    "type": "plain_text",
+                    "text":   "Du lundi au mercredi, vous aurez la possibilité de choisir vos plats."  ,
+                    "emoji": true
+                }
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "Cliquer sur le bouton pour voir le menu sur le site ."
+                },
+                "accessory": {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Click Me",
+                        "emoji": true
+                    },
+                    "value": "click_me_123",
+                    "url": "https://seazon.fr/menu",
+                    "action_id": "button-action"
+                }
+            },
+        ]  
+    }
+});
+      logger.info(result);
+    }
+    catch (error) {
+      logger.error(error);
+    }
+  });
 
 
 
-app.event('app_home_opened', async ({ client, payload }) => {
+app.event('app_home_opened', async ({ payload }) => {
     console.log(payload)
     if (payload.tab === 'messages') {
-        const channelId = "D03F4CQGPPH"
         try {
 
             // const result = client.chat.postMessage({
@@ -152,24 +193,26 @@ app.event('app_home_opened', async ({ client, payload }) => {
 
 })
 
+// programmer un message 
 const eachWednesday = async () => {
     try {
         const channel = "D03F4CQGPPH";
-
+        const date = DateTime.now().plus({ week: 1 })
         const aujourdhui = new Date();
+        aujourdhui.setHours(14, 20, 0);
         await app.client.chat.postMessage({
             channel,
             text: `${new Date}`
         });
-        aujourdhui.setMinutes(aujourdhui.getMinutes() + 1)
-        // aujourdhui.setHours(9, 50, 0);
+        //aujourdhui.setMinutes(aujourdhui.getMinutes() + 1)
+        // aujourdhui.setHours(11, 3, 0);
         const test = Math.floor(aujourdhui.getTime() / 1000)
         await app.client.chat.scheduleMessage({
             channel: channel,
-            text: "bonjour test menu: " + aujourdhui,
+            text: "bonjour test menu: " + aujourdhui ,
             post_at: test
         });
-eachWednesday()
+// eachWednesday()
     }
     catch (error) {
         console.error(error);
@@ -182,9 +225,6 @@ eachWednesday()
 
 
 
-
-
-
 app.message(
     /^(hi|hello|hey|wesh|yo|salut).*/,
     async ({ client, context, message, say }) => {
@@ -194,6 +234,8 @@ app.message(
         await say(`${greeting}, <@${message.user}>`)
     }
 )
+
+// PAS BESOIN 
 // app.event(
 //     /^(t).*/,
 //     async ({ client, context, message, say }) => {
@@ -204,7 +246,7 @@ app.message(
 //     }
 // )
 
-app.message(/^(information).*/, async ({ client, context, message, say }) => {
+app.message(/^(information).*/, async ({ client, message, say }) => {
     if (!isGenericMessageEvent(message)) return
     handleUser(message.user, users, client)
     for (const userID in users) {
@@ -229,7 +271,7 @@ app.message(/^(information).*/, async ({ client, context, message, say }) => {
 //     }
 
 // });
-app.message(/(total)/, async ({ client, context, message, say }) => {
+app.message(/(total)/, async ({ client, message, say }) => {
     if (!isGenericMessageEvent(message)) return
     console.log(client.users.profile.get)
 
@@ -251,16 +293,17 @@ app.message(/(total)/, async ({ client, context, message, say }) => {
         }
     }
 })
-app.message(/(credit) ([0-9]*)/, async ({ context, client, message, say }) => {
-    if (!isGenericMessageEvent(message)) return
-    handleUser(message.user, users, client)
-    users[message.user].credits = parseInt(context.matches[2])
-    await writeUsers(users)
-    await say(
-        ` <@${message.user}>,  ${users[message.user].credits
-        } credit ajouté pour la semaine`
-    )
-})
+ // plus besoin 
+// app.message(/(credit) ([0-9]*)/, async ({ context, client, message, say }) => {
+//     if (!isGenericMessageEvent(message)) return
+//     handleUser(message.user, users, client)
+//     users[message.user].credits = parseInt(context.matches[2])
+//     await writeUsers(users)
+//     await say(
+//         ` <@${message.user}>,  ${users[message.user].credits
+//         } credit ajouté pour la semaine`
+//     )
+// })
 
 app.message(
     /(commande|commandé) ([0-9]*)/,
@@ -300,10 +343,10 @@ app.message(
     }
 )
 
-app.message(/^(help).*/, async ({ client, context, message, say }) => {
+app.message(/^(help).*/, async ({ context, message, say }) => {
     if (!isGenericMessageEvent(message)) return
     await say(
-        'voici les commandes disponible : \n hi / hello / hey / wesh /yo / salut \n total \n commande / commandé \n mange / mangé'
+        'voici les commandes disponible : \n hi / hello / hey / wesh /yo / salut \n total \n commande / commandé \n mange / mangé  \n menu / menu + date  '
     )
     const greeting = context.matches[1]
     await say(`${greeting}, <@${message.user}>`)
@@ -337,7 +380,7 @@ app.message(
 
 app.action(
     /addMeal-(([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9]))/,
-    async ({ body, action, client, context, ack, respond, say }) => {
+    async ({ body, action, context, ack, respond }) => {
         await ack()
 
         const currentUser = body.user.id
