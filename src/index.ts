@@ -9,22 +9,16 @@ import {
 } from './utils/helpers'
 import { handleUser } from './managers/UserManager'
 import { User } from './models/User'
-import {
-    readUsers,
-    readWeekMenu,
-    writeUsers,
-    writeWeekMenu,
-} from './managers/SaveManager'
+import { readUsers, writeUsers, writeWeekMenu } from './managers/SaveManager'
 import { mealToBlock } from './MessageBlock'
-import { WeekMenu } from './models/WeekMenu'
-import { fetchMealsFromSeazon } from './services/SlackService'
 import { DateTime } from 'luxon'
 import { getMenuForDate } from './managers/MenuManager'
-import { ACTION_BLOCK, CONTEXT_BLOCK, DIVIDER_BLOCK, TEXT_BLOCK, TEXT_WITH_IMAGE_BLOCK } from './utils/SlackBlockHelpers'
-import { Meal } from './models/Meal'
+import { GoogleSheetManager } from './managers/GoogleSheetManager'
+import { TEXT_BLOCK } from './utils/SlackBlockHelpers'
 
 // GlobalVar
 let users: Record<string, User> = {}
+const seazonGoogleManager = new GoogleSheetManager()
 
 // Initializes your app with your bot token and signing secret
 const app = new App({
@@ -37,193 +31,82 @@ const startMyApp = async () => {
     // Start your app
     users = await readUsers()
     await app.start(process.env.PORT || 1234)
-
     console.log('⚡️ Bolt app is running!')
-
+    eachWednesday()
 }
 
-// toc to c
-// app.message('toc toc', async ({ say }) => {
-//     await say(`qui est la ?`);
-//   })
-
-
-//   app.event('app_home_opened',
-//        async ({ client, message, event ,  context, say , payload }) => {
-       
-//         if (payload.tab === 'messages') { 
-//         const weekMenu = await getMenuForDate()
-//         const rawBlocks = weekMenu.meals.map((meal) =>
-//             mealToBlock(weekMenu.date, meal, users)
-//         )
-//         rawBlocks.forEach(async (block) => {
-//             await say({ blocks: block, text: 'Menu de la semaine' })
-//         })
-//         console.log(weekMenu)
-//     }
-    
-// }
-
-// )
-
-
-
-//   app.action('button-action', async ({ ack, say }) => {
-//     // Acknowledge action request
-//     await ack();
-//     await say('Request approved 👍');
-//   });
-
-  // messsage publié apres avoir ecrie toto 
-  app.message('toto', async ({ message, client, logger }) => {
-    try {
-        const aujourdhui = new Date();
-        aujourdhui.setHours(11, 0, 0);
-        const test = Math.floor(aujourdhui.getTime() / 1000)
-      
-      const result = await client.chat.scheduleMessage({
-        channel: message.channel,
-        post_at: test,
-        text: 'bonne vacance'
-      });
-    }
-    catch (error) {
-      logger.error(error);
-    }
-  });
-
-// // WELCOME
-// app.event('app_home_opened', async ({ event, say , payload }) => {
-//     if (payload.tab === 'messages') {  
-//     await say(`BIENVENUE :smiley:<@${event.user}>!:smiley:`);}
-// });
-
-
-// TEST TOTAL CREDIT
-// app.event('app_home_opened', async ({ event, say }) => {  
-//     const total =
-//     users[event.user].credits - users[event.user].mealsByWeek
-// await say(
-//     `voila <@${event.user}> ${total} nombre de credits restant !`
-// )
-// if (users[event.user].mealsByWeek > users[event.user].credits) {
-//     await say(
-//         `voila <@${event.user}> TU ES ENDETTE DE  ${total} CREDIT `
-//     )
-// }
-// });
-
-
-
-// MENU        
-app.event('app_home_opened', async ({ event, client , context , say , payload,   logger }) => {
-    try {
-       
-            // const weekMenu = await getMenuForDate()
-            // const rawBlocks = weekMenu.meals.map((meal) =>
-            //     mealToBlock(weekMenu.date, meal, users)
-            // )
-            // rawBlocks.forEach(async (block) => {
-            //     await say({ blocks: block, text: 'Menu de la semaine' })
-            // })
-            
-    
-          
-      const result = await client.views.publish({
-          
-        user_id: event.user,
-        
-        view: {
-          "type": "home",
-          blocks: [
-            {
-                "type": "section",
-                "text": {
-                    "type": "plain_text",
-                    "text":   "Du lundi au mercredi, vous aurez la possibilité de choisir vos plats."  ,
-                    "emoji": true
-                }
-            },
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": "Cliquer sur le bouton pour voir le menu sur le site ."
-                },
-                "accessory": {
-                    "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": "Click Me",
-                        "emoji": true
-                    },
-                    "value": "click_me_123",
-                    "url": "https://seazon.fr/menu",
-                    "action_id": "button-action"
-                }
-            },
-        ]  
-    }
-});
-      logger.info(result);
-    }
-    catch (error) {
-      logger.error(error);
-    }
-  });
-
-
-
-app.event('app_home_opened', async ({ payload }) => {
-    console.log(payload)
-    if (payload.tab === 'messages') {
+// MENU
+app.event(
+    'app_home_opened',
+    async ({ event, client, context, say, payload, logger }) => {
         try {
+            const result = await client.views.publish({
+                user_id: event.user,
 
-            // const result = client.chat.postMessage({
-            //     channel: channelId,
-            //     text: "TEST"
-            // });
-
-            // console.log(result);
-        }
-        catch (error) {
-            console.error(error);
+                view: {
+                    type: 'home',
+                    blocks: [
+                        {
+                            type: 'section',
+                            text: {
+                                type: 'plain_text',
+                                text: 'Du lundi au mercredi, vous aurez la possibilité de choisir vos plats.',
+                                emoji: true,
+                            },
+                        },
+                        {
+                            type: 'section',
+                            text: {
+                                type: 'mrkdwn',
+                                text: 'Cliquer sur le bouton pour voir le menu sur le site .',
+                            },
+                            accessory: {
+                                type: 'button',
+                                text: {
+                                    type: 'plain_text',
+                                    text: 'Click Me',
+                                    emoji: true,
+                                },
+                                value: 'click_me_123',
+                                url: 'https://seazon.fr/menu',
+                                action_id: 'button-action',
+                            },
+                        },
+                    ],
+                },
+            })
+            logger.info(result)
+        } catch (error) {
+            logger.error(error)
         }
     }
+)
 
-})
-
-// programmer un message 
+// programmer un message
 const eachWednesday = async () => {
     try {
-        const channel = "D03F4CQGPPH";
+        const channel = 'D03F4CQGPPH'
         const date = DateTime.now().plus({ week: 1 })
-        const aujourdhui = new Date();
-        aujourdhui.setHours(14, 20, 0);
+        const aujourdhui = new Date()
+        aujourdhui.setHours(14, 20, 0)
         await app.client.chat.postMessage({
             channel,
-            text: `${new Date}`
-        });
+            text: `${new Date()}`,
+        })
         //aujourdhui.setMinutes(aujourdhui.getMinutes() + 1)
         // aujourdhui.setHours(11, 3, 0);
         const test = Math.floor(aujourdhui.getTime() / 1000)
         await app.client.chat.scheduleMessage({
             channel: channel,
-            text: "bonjour test menu: " + aujourdhui ,
-            post_at: test
-        });
-// eachWednesday()
+            text: 'bonjour test menu: ' + aujourdhui,
+            post_at: test,
+        })
+        // eachWednesday()
+    } catch (error) {
+        console.error(error)
+        console.error((error as any).data)
     }
-    catch (error) {
-        console.error(error);
-        console.error((error as any).data);
-    };
-
 }
-
-eachWednesday()
-
-
 
 app.message(
     /^(hi|hello|hey|wesh|yo|salut).*/,
@@ -235,17 +118,6 @@ app.message(
     }
 )
 
-// PAS BESOIN 
-// app.event(
-//     /^(t).*/,
-//     async ({ client, context, message, say }) => {
-//         if (!isGenericMessageEvent(message)) return
-//         handleUser(message, users, client)
-//         const greeting = context.matches[1]
-//         await say(`${greeting}, <@${message}>`)
-//     }
-// )
-
 app.message(/^(information).*/, async ({ client, message, say }) => {
     if (!isGenericMessageEvent(message)) return
     handleUser(message.user, users, client)
@@ -255,22 +127,14 @@ app.message(/^(information).*/, async ({ client, message, say }) => {
     }
 })
 
+app.message(/(steup)/, async ({ client, message, say }) => {
+    const credits = await seazonGoogleManager.listMoneyByUSer()
+    const blocks = credits.map((credit) => {
+        return TEXT_BLOCK(`${credit.username} : ${credit.credits}`)
+    })
+    say({ blocks })
+})
 
-// app.event('app_home_opened', async ({ event, say }) => {  
-//     for (const userID in users) {
-//         const user = users[userID]
-//         const mealsByWeekString = user.mealsByWeek > 1 ? `plats` : 'plat'
-//         if (user.mealsByWeek > 0) {
-//             await say(
-//                 `<@${user.id}>, il te reste ${user.mealsByWeek} ${mealsByWeekString} cette semaine!`
-//             )
-//         } else {
-//             user.mealsByWeek <= 0
-//             await say(`<@${user.id}>, TU AS TOUT MANGE  !`)
-//         }
-//     }
-
-// });
 app.message(/(total)/, async ({ client, message, say }) => {
     if (!isGenericMessageEvent(message)) return
     console.log(client.users.profile.get)
@@ -293,17 +157,6 @@ app.message(/(total)/, async ({ client, message, say }) => {
         }
     }
 })
- // plus besoin 
-// app.message(/(credit) ([0-9]*)/, async ({ context, client, message, say }) => {
-//     if (!isGenericMessageEvent(message)) return
-//     handleUser(message.user, users, client)
-//     users[message.user].credits = parseInt(context.matches[2])
-//     await writeUsers(users)
-//     await say(
-//         ` <@${message.user}>,  ${users[message.user].credits
-//         } credit ajouté pour la semaine`
-//     )
-// })
 
 app.message(
     /(commande|commandé) ([0-9]*)/,
@@ -313,7 +166,8 @@ app.message(
         users[message.user].mealsByWeek = parseInt(context.matches[2])
         await writeUsers(users)
         await say(
-            `voila <@${message.user}>, tu as commandé ${users[message.user].mealsByWeek
+            `voila <@${message.user}>, tu as commandé ${
+                users[message.user].mealsByWeek
             } plats cette semaine!`
         )
         const total =
@@ -337,7 +191,8 @@ app.message(
         users[message.user].mealsByWeek -= parseInt(context.matches[2])
 
         await say(
-            `voila <@${message.user}>, il te reste ${users[message.user].mealsByWeek
+            `voila <@${message.user}>, il te reste ${
+                users[message.user].mealsByWeek
             } plats cette semaine!`
         )
     }
@@ -353,7 +208,6 @@ app.message(/^(help).*/, async ({ context, message, say }) => {
 })
 
 app.message(
-
     /menu( ([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9]))?/,
     async ({ client, message, context, say }) => {
         if (!isGenericMessageEvent(message)) return
@@ -376,7 +230,6 @@ app.message(
         })
     }
 )
-
 
 app.action(
     /addMeal-(([0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9]))/,
@@ -442,5 +295,3 @@ app.action(
 )
 
 startMyApp()
-
-

@@ -131,3 +131,5 @@ dist
 
 bin
 data
+token.json
+google-api-credentials.json
