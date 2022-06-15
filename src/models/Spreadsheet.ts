@@ -40,3 +40,16 @@ export class Spreadsheet<T = any> extends Array<Array<T>> {
         }
     }
 }
+
+export interface MealOrder {
+    startDate: string // column A ==> 0
+    endDate: string // column B ==> 1
+    cost: number // column C ==> 2
+    quantity: number // column D ==> 3
+}
+
+
+export interface SheetCredit {
+    username?: string
+    credits: number
+}

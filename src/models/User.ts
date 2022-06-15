@@ -1,9 +1,5 @@
 import { Profile } from '@slack/web-api/dist/response/UsersProfileGetResponse'
-
-export interface SheetCredit {
-    username?: string
-    credits: number
-}
+import { SheetCredit } from './Spreadsheet'
 
 export interface User extends SheetCredit {
     id: string

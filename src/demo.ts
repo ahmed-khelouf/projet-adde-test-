@@ -24,3 +24,4 @@ const columnSheet = new Spreadsheet(
 
 console.log('rowSheet', rowSheet.value(1, 2))
 console.log('columnSheet', columnSheet.value(1, 2))
+
