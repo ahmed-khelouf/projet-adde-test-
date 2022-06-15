@@ -135,6 +135,16 @@ app.message(/(steup)/, async ({ client, message, say }) => {
     say({ blocks })
 })
 
+app.message(/(showdate)/, async ({ client, message, say }) => {
+    const credits = await seazonGoogleManager.listPreviousOrders()
+    const blocks = credits.map((order) => {
+        return TEXT_BLOCK(
+            ` from ${order.startDate} to ${order.endDate} we ordered ${order.quantity} meals for ${order.cost} €`
+        )
+    })
+    say({ blocks })
+})
+
 app.message(/(total)/, async ({ client, message, say }) => {
     if (!isGenericMessageEvent(message)) return
     console.log(client.users.profile.get)
