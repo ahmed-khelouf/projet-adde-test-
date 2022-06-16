@@ -15,6 +15,7 @@ import { DateTime } from 'luxon'
 import { getMenuForDate } from './managers/MenuManager'
 import { GoogleSheetManager } from './managers/GoogleSheetManager'
 import { TEXT_BLOCK } from './utils/SlackBlockHelpers'
+import { toolresults } from 'googleapis/build/src/apis/toolresults'
 
 // GlobalVar
 let users: Record<string, User> = {}
@@ -118,6 +119,7 @@ app.message(
     }
 )
 
+
 app.message(/^(information).*/, async ({ client, message, say }) => {
     if (!isGenericMessageEvent(message)) return
     handleUser(message.user, users, client)
@@ -144,6 +146,12 @@ app.message(/(showdate)/, async ({ client, message, say }) => {
     })
     say({ blocks })
 })
+// fonction test googlesheetmanagers
+// app.message(/([a-zA-Z])/, async ({ client, message,context, say }) => {
+//     const greeting = context
+//  await seazonGoogleManager.test(greeting)
+
+// })
 
 app.message(/(total)/, async ({ client, message, say }) => {
     if (!isGenericMessageEvent(message)) return

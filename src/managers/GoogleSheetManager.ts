@@ -20,6 +20,11 @@ const ORDER_MEAL_END_DATE_COLUMN = 1
 const ORDER_MEAL_COST_COLUMN = 2
 const ORDER_MEAL_QUANTITY_COLUMN = 3
 
+// const nb = 4;
+// const euro = 5;
+
+const jojo = "ttotot"
+
 export interface GoogleSheetManager {
     auth: OAuth2Client
     listMoneyByUSer: () => Promise<SheetCredit[]>
@@ -37,6 +42,23 @@ export class GoogleSheetManager implements GoogleSheetManager {
         const token = fs.readFileSync(TOKEN_PATH)
         this.auth.setCredentials(JSON.parse(token.toString()))
     }
+   test = async (c : any) =>{
+    const sheets = google.sheets({ version: 'v4', auth: this.auth })
+        const result = {
+    spreadsheetId: process.env.GOOGLE_SHEET_ID, 
+    range: "'test'",  
+    valueInputOption: 'USER_ENTERED',   
+    resource: {
+        
+        values : [          
+            [jojo , , , , , , , , ]]
+    }
+}
+const titi = sheets.spreadsheets.values.append(result)
+ 
+return titi
+}
+    
 
     listPreviousOrders = async (): Promise<MealOrder[]> => {
         let orders: MealOrder[] = []
@@ -140,3 +162,36 @@ const makeUser =
         // push the user and its credits to the array
         return { username, credits }
     }
+
+    async function updateValues(spreadsheetId :string, range :string, valueInputOption : object, _values : number) {
+        const {GoogleAuth} = require('google-auth-library');
+        const {google} = require('googleapis');
+      
+        const auth = new GoogleAuth(
+            {scopes: 'https://www.googleapis.com/auth/spreadsheet'});
+      
+        const service = google.sheets({version: 'v4', auth});
+        let values = [
+          [
+            // Cell values ...
+          ],
+          // Additional rows ...
+        ];
+        const resource = {
+          values,
+        };
+        try {
+          const result = await service.spreadsheets.values.update({
+            spreadsheetId:
+            range,
+            valueInputOption,
+            resource,
+          });
+          console.log('%d cells updated.', result.data.updatedCells);
+          return result;
+        } catch (err) {
+          // TODO (Developer) - Handle exception
+          throw err;
+        }
+        
+      }

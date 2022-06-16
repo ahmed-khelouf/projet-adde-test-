@@ -116,3 +116,5 @@ function listMajors(auth: OAuth2Client) {
         }
     )
 }
+
+
