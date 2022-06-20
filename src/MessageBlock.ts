@@ -1,3 +1,4 @@
+import { ModalView } from '@slack/bolt'
 import { Meal } from './models/Meal'
 import { User } from './models/User'
 import {
@@ -6,6 +7,9 @@ import {
     ACTION_BLOCK,
     CONTEXT_BLOCK,
     DIVIDER_BLOCK,
+    MODAL_BLOCK,
+    DATE_INPUT_BLOCK,
+    TEXT_INPUT_BLOCK,
 } from './utils/SlackBlockHelpers'
 
 export const SEAZON_ATE_LUNCH_QUESTION = {
@@ -141,18 +145,18 @@ export const SEAZON_GIVE_LUNCH_DYN = {
             ],
         },
         {
-			"dispatch_action": true,
-			"type": "input",
-			"element": {
-				"type": "plain_text_input",
-				"action_id": "plain_text_input-action"
-			},
-			"label": {
-				"type": "plain_text",
-				"text": "Label",
-				"emoji": true
-			}
-		}
+            dispatch_action: true,
+            type: 'input',
+            element: {
+                type: 'plain_text_input',
+                action_id: 'plain_text_input-action',
+            },
+            label: {
+                type: 'plain_text',
+                text: 'Label',
+                emoji: true,
+            },
+        },
     ],
 }
 
@@ -171,10 +175,23 @@ export const mealToBlock = (
                 text: 'Je veux celui-ci',
                 value: meal.id,
                 id: `addMeal-${mealWeekDate}`,
-            
             },
         ]),
         CONTEXT_BLOCK(orderedByUsers),
         DIVIDER_BLOCK,
     ]
+}
+
+export const OrderToModalView = (startDate: string): ModalView => {
+    return MODAL_BLOCK('Nouvelle commande', 'SEAZON_ORDER', [
+        TEXT_BLOCK('TODO:'),
+        DIVIDER_BLOCK,
+        DATE_INPUT_BLOCK(
+            'startDate',
+            'Date de début de commande (choisir le lundi):',
+            startDate
+        ),
+        TEXT_INPUT_BLOCK('cost', 'coût (en euros):'),
+        TEXT_INPUT_BLOCK('quantity', 'nombre de plats commandés:'),
+    ])
 }

@@ -1,11 +1,16 @@
 import {
     ActionsBlock,
+    Block,
     ContextBlock,
     DividerBlock,
     ImageElement,
+    KnownBlock,
+    ModalView,
     MrkdwnElement,
     PlainTextElement,
+    Datepicker,
     SectionBlock,
+    InputBlock,
 } from '@slack/bolt'
 import { User } from '../models/User'
 
@@ -13,6 +18,75 @@ interface SlackAction {
     id: string
     text: string
     value: string
+}
+
+export const MODAL_BLOCK = (
+    title: string,
+    callback_id: string,
+    blocks: (KnownBlock | Block)[]
+): ModalView => {
+    return {
+        type: 'modal',
+        title: {
+            type: 'plain_text',
+            text: title,
+            emoji: true,
+        },
+        callback_id,
+        blocks,
+        submit: {
+            type: 'plain_text',
+            text: 'Sauvegarder',
+            emoji: true,
+        },
+        close: {
+            type: 'plain_text',
+            text: 'Annuler',
+            emoji: true,
+        },
+    }
+}
+
+export const DATE_INPUT_BLOCK = (
+    action_id: string,
+    label: string,
+    initial_date: string
+): InputBlock => {
+    return {
+        type: 'input',
+        block_id: action_id,
+        element: {
+            type: 'datepicker',
+            initial_date,
+            action_id,
+        },
+        label: {
+            type: 'plain_text',
+            text: label,
+            emoji: true,
+        },
+    }
+}
+
+export const TEXT_INPUT_BLOCK = (
+    action_id: string,
+    label: string,
+    initial_value?: string
+): InputBlock => {
+    return {
+        type: 'input',
+        block_id: action_id,
+        element: {
+            type: 'plain_text_input',
+            initial_value,
+            action_id,
+        },
+        label: {
+            type: 'plain_text',
+            text: label,
+            emoji: true,
+        },
+    }
 }
 
 export const DIVIDER_BLOCK: DividerBlock = {

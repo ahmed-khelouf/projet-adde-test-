@@ -1,6 +1,6 @@
 import fs from 'fs'
 import { OAuth2Client } from 'google-auth-library'
-import { google } from 'googleapis'
+import { google, sheets_v4 } from 'googleapis'
 import { MealOrder, SheetCredit, Spreadsheet } from '../models/Spreadsheet'
 
 // The file token.json stores the user's access and refresh tokens, and is
@@ -9,6 +9,7 @@ import { MealOrder, SheetCredit, Spreadsheet } from '../models/Spreadsheet'
 const TOKEN_PATH = 'token.json'
 
 const MAJOR_DIMENSION = 'rows'
+const SEAZON_BOT_USERS_SPREADSHEET_RANGE = "'seazon-bot'"
 const SEAZON_USERS_SPREADSHEET_RANGE = "'seazon'"
 
 const USERNAME_ROW = 0
@@ -23,15 +24,15 @@ const ORDER_MEAL_QUANTITY_COLUMN = 3
 // const nb = 4;
 // const euro = 5;
 
-const jojo = "ttotot"
-
 export interface GoogleSheetManager {
-    auth: OAuth2Client
+    // auth: OAuth2Client
+    sheets: sheets_v4.Sheets
     listMoneyByUSer: () => Promise<SheetCredit[]>
 }
 
 export class GoogleSheetManager implements GoogleSheetManager {
     auth: OAuth2Client
+    sheets: sheets_v4.Sheets
 
     constructor() {
         this.auth = new google.auth.OAuth2(
@@ -39,31 +40,47 @@ export class GoogleSheetManager implements GoogleSheetManager {
             process.env.GOOGLE_API_CLIENT_SECRET,
             'localhost'
         )
+        // const auth = new google.auth.OAuth2(
+        //     '105421802774914929331',
+        //     process.env.GOOGLE_API_CLIENT_SECRET,
+        //     'localhost'
+        // )
         const token = fs.readFileSync(TOKEN_PATH)
         this.auth.setCredentials(JSON.parse(token.toString()))
+        this.sheets = google.sheets({ version: 'v4', auth: this.auth })
     }
-   test = async (c : any) =>{
-    const sheets = google.sheets({ version: 'v4', auth: this.auth })
-        const result = {
-    spreadsheetId: process.env.GOOGLE_SHEET_ID, 
-    range: "'test'",  
-    valueInputOption: 'USER_ENTERED',   
-    resource: {
-        
-        values : [          
-            [jojo , , , , , , , , ]]
+
+    initSheet = async () => {
+        const response = await this.sheets.spreadsheets.values.get({
+            spreadsheetId: process.env.GOOGLE_SHEET_ID,
+            range: SEAZON_BOT_USERS_SPREADSHEET_RANGE,
+            majorDimension: MAJOR_DIMENSION,
+        })
     }
-}
-const titi = sheets.spreadsheets.values.append(result)
- 
-return titi
-}
-    
+
+    appendCommand = async (rows: Spreadsheet) => {
+        try {
+            const result = {
+                spreadsheetId: process.env.GOOGLE_SHEET_ID,
+                range: "'seazon-bot'",
+                valueInputOption: 'USER_ENTERED',
+                resource: {
+                    values: rows,
+                },
+            }
+            const response = await this.sheets.spreadsheets.values.append(
+                result
+            )
+            console.log('response', response)
+        } catch (error) {
+            console.log('error', error)
+        }
+    }
 
     listPreviousOrders = async (): Promise<MealOrder[]> => {
         let orders: MealOrder[] = []
-        const sheets = google.sheets({ version: 'v4', auth: this.auth })
-        const response = await sheets.spreadsheets.values.get({
+
+        const response = await this.sheets.spreadsheets.values.get({
             spreadsheetId: process.env.GOOGLE_SHEET_ID,
             range: SEAZON_USERS_SPREADSHEET_RANGE,
             majorDimension: MAJOR_DIMENSION,
@@ -114,8 +131,7 @@ return titi
     }
     listMoneyByUSer = () => {
         return new Promise<SheetCredit[]>((resolve, reject) => {
-            const sheets = google.sheets({ version: 'v4', auth: this.auth })
-            sheets.spreadsheets.values.get(
+            this.sheets.spreadsheets.values.get(
                 {
                     spreadsheetId: process.env.GOOGLE_SHEET_ID,
                     range: SEAZON_USERS_SPREADSHEET_RANGE,
@@ -163,35 +179,39 @@ const makeUser =
         return { username, credits }
     }
 
-    async function updateValues(spreadsheetId :string, range :string, valueInputOption : object, _values : number) {
-        const {GoogleAuth} = require('google-auth-library');
-        const {google} = require('googleapis');
-      
-        const auth = new GoogleAuth(
-            {scopes: 'https://www.googleapis.com/auth/spreadsheet'});
-      
-        const service = google.sheets({version: 'v4', auth});
-        let values = [
-          [
+async function updateValues(
+    spreadsheetId: string,
+    range: string,
+    valueInputOption: object,
+    _values: number
+) {
+    const { GoogleAuth } = require('google-auth-library')
+    const { google } = require('googleapis')
+
+    const auth = new GoogleAuth({
+        scopes: 'https://www.googleapis.com/auth/spreadsheet',
+    })
+
+    const service = google.sheets({ version: 'v4', auth })
+    let values = [
+        [
             // Cell values ...
-          ],
-          // Additional rows ...
-        ];
-        const resource = {
-          values,
-        };
-        try {
-          const result = await service.spreadsheets.values.update({
-            spreadsheetId:
-            range,
+        ],
+        // Additional rows ...
+    ]
+    const resource = {
+        values,
+    }
+    try {
+        const result = await service.spreadsheets.values.update({
+            spreadsheetId: range,
             valueInputOption,
             resource,
-          });
-          console.log('%d cells updated.', result.data.updatedCells);
-          return result;
-        } catch (err) {
-          // TODO (Developer) - Handle exception
-          throw err;
-        }
-        
-      }
+        })
+        console.log('%d cells updated.', result.data.updatedCells)
+        return result
+    } catch (err) {
+        // TODO (Developer) - Handle exception
+        throw err
+    }
+}

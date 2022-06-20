@@ -10,12 +10,13 @@ import {
 import { handleUser } from './managers/UserManager'
 import { User } from './models/User'
 import { readUsers, writeUsers, writeWeekMenu } from './managers/SaveManager'
-import { mealToBlock } from './MessageBlock'
+import { mealToBlock, OrderToModalView } from './MessageBlock'
 import { DateTime } from 'luxon'
 import { getMenuForDate } from './managers/MenuManager'
 import { GoogleSheetManager } from './managers/GoogleSheetManager'
 import { TEXT_BLOCK } from './utils/SlackBlockHelpers'
 import { toolresults } from 'googleapis/build/src/apis/toolresults'
+import { createCommandRow } from './utils/GoogleSheetManager+utils'
 
 // GlobalVar
 let users: Record<string, User> = {}
@@ -119,7 +120,6 @@ app.message(
     }
 )
 
-
 app.message(/^(information).*/, async ({ client, message, say }) => {
     if (!isGenericMessageEvent(message)) return
     handleUser(message.user, users, client)
@@ -129,7 +129,7 @@ app.message(/^(information).*/, async ({ client, message, say }) => {
     }
 })
 
-app.message(/(steup)/, async ({ client, message, say }) => {
+app.message(/(balances)/, async ({ client, message, say }) => {
     const credits = await seazonGoogleManager.listMoneyByUSer()
     const blocks = credits.map((credit) => {
         return TEXT_BLOCK(`${credit.username} : ${credit.credits}`)
@@ -146,6 +146,73 @@ app.message(/(showdate)/, async ({ client, message, say }) => {
     })
     say({ blocks })
 })
+
+app.shortcut('ORDER_SEAZON_MEAL', async ({ client, payload, ack }) => {
+    await ack()
+    const nextWeekDate = DateTime.now()
+        .plus({ week: 1 })
+        .startOf('week')
+        .toFormat('yyyy-MM-dd')
+    const modal = OrderToModalView(nextWeekDate)
+
+    client.views.open({ view: modal, trigger_id: payload.trigger_id })
+})
+
+app.view('SEAZON_ORDER', async ({ view, ack }) => {
+    const {
+        state: { values },
+    } = view
+    console.log(values['startDate']['startDate'])
+    const startDate = values['startDate']['startDate'].selected_date
+    const cost = values['cost']['cost'].value
+    const quantity = values['quantity']['quantity'].value
+    const startDateError = startDate
+        ? undefined
+        : { startDate: 'startDate is undefined.' }
+    const costError =
+        cost && isNaN(parseInt(cost))
+            ? { cost: 'cost is not a number' }
+            : undefined
+    const quantityError =
+        quantity && isNaN(parseInt(quantity))
+            ? { quantity: 'quantity is not a number' }
+            : undefined
+
+    if (startDateError || costError || quantityError) {
+        const errors = { ...startDateError, ...costError, ...quantityError }
+        await ack({ response_action: 'errors', errors })
+    } else {
+        console.log('can insert order: ', startDate, cost, quantity)
+        if (startDate && cost && quantity) {
+            console.log('INSERTING ROW')
+            const endDate = DateTime.fromISO(startDate)
+                .plus({ days: 6 })
+                .toFormat('yyyy-MM-dd')
+            const costFloat = parseFloat(cost)
+            const quantityInt = parseInt(quantity)
+            const row = createCommandRow({
+                startDate,
+                endDate,
+                cost: costFloat,
+                mealQuantity: quantityInt,
+                users: [],
+            })
+            await seazonGoogleManager.appendCommand(row)
+        }
+        await ack()
+    }
+
+    // await ack()
+})
+
+// app.message('nouvelle commande', async ({ client, message, say }) => {
+//     const nextWeekDate = DateTime.now()
+//         .plus({ week: 1 })
+//         .startOf('week')
+//         .toFormat('yyyy-MM-dd')
+//     const modal = OrderToModalView(nextWeekDate)
+//     client.views.open({ view: modal, trigger_id: client. })
+// })
 // fonction test googlesheetmanagers
 // app.message(/([a-zA-Z])/, async ({ client, message,context, say }) => {
 //     const greeting = context
