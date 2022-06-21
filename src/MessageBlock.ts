@@ -1,3 +1,4 @@
+import { ModalView } from '@slack/bolt'
 import { Meal } from './models/Meal'
 import { User } from './models/User'
 import {
@@ -6,6 +7,9 @@ import {
     ACTION_BLOCK,
     CONTEXT_BLOCK,
     DIVIDER_BLOCK,
+    MODAL_BLOCK,
+    DATE_INPUT_BLOCK,
+    TEXT_INPUT_BLOCK,
 } from './utils/SlackBlockHelpers'
 
 export const SEAZON_ATE_LUNCH_QUESTION = {
@@ -47,7 +51,7 @@ export const SEAZON_ATE_LUNCH_QUESTION = {
         },
     ],
 }
-var file = require('../data/mealsS.json')
+// var file = require('../data/mealsS.json')
 
 //console.log(file["results"][0]["menu"][2].meal.fridge)
 
@@ -140,19 +144,76 @@ export const SEAZON_GIVE_LUNCH_DYN = {
                 },
             ],
         },
+        {
+            dispatch_action: true,
+            type: 'input',
+            element: {
+                type: 'plain_text_input',
+                action_id: 'plain_text_input-action',
+            },
+            label: {
+                type: 'plain_text',
+                text: 'Label',
+                emoji: true,
+            },
+        },
     ],
 }
 
-export const mealToBlock = (meal: Meal, users: Record<string, User>) => {
+export const mealToBlock = (
+    mealWeekDate: string,
+    meal: Meal,
+    users: Record<string, User>
+) => {
     const orderedByUsers =
         meal.users?.map((userID) => users[userID]).filter((user) => user) || []
     return [
         TEXT_WITH_IMAGE_BLOCK(meal.name, meal.imageUrl),
         TEXT_BLOCK(meal.description),
         ACTION_BLOCK([
-            { text: 'Je veux celui-ci', value: meal.id, id: 'addMeal' },
+            {
+                text: 'Je veux celui-ci',
+                value: meal.id,
+                id: `addMeal-${mealWeekDate}`,
+            },
         ]),
         CONTEXT_BLOCK(orderedByUsers),
         DIVIDER_BLOCK,
     ]
+}
+
+export const OrderToModalView = (startDate: string): ModalView => {
+    return MODAL_BLOCK('Nouvelle commande', 'SEAZON_ORDER', [
+        TEXT_BLOCK('TODO:'),
+        DIVIDER_BLOCK,
+        DATE_INPUT_BLOCK(
+            'startDate',
+            'Date de début de commande (choisir le lundi):',
+            startDate
+        ),
+        TEXT_INPUT_BLOCK('cost', 'coût (en euros):'),
+        TEXT_INPUT_BLOCK('quantity', 'nombre de plats commandés:'),
+    ])
+}
+
+export const OrderToModalViewCredit = (startDate: string): ModalView => {
+    return MODAL_BLOCK('Ajouter des credits ', 'ORDER_SEAZON_CREDIT', [
+        TEXT_BLOCK('toto:'),
+        DIVIDER_BLOCK,
+        DATE_INPUT_BLOCK(
+            'startDate',
+            'ajoute credit  (choisir le lundi):',
+            startDate
+        )
+    ])
+}
+
+export const OrderToModalViewNb = (): ModalView => {
+    return MODAL_BLOCK('nb plat de la semaine ', 'ORDER_SEAZON_NB', [
+        TEXT_BLOCK('TODO:'),
+        DIVIDER_BLOCK,
+        
+        TEXT_INPUT_BLOCK('nbPlat', 'nbPlat (par semaine):'),
+
+    ])
 }

@@ -1,9 +1,9 @@
 import { Profile } from '@slack/web-api/dist/response/UsersProfileGetResponse'
+import { SheetCredit } from './Spreadsheet'
 
-export interface User {
+export interface User extends SheetCredit {
     id: string
     mealsByWeek: number
-    credits: number
     isSubscribed: boolean
     profile?: Profile
     pendingResponses: SentMessage[]
