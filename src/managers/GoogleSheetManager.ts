@@ -57,6 +57,42 @@ export class GoogleSheetManager implements GoogleSheetManager {
             majorDimension: MAJOR_DIMENSION,
         })
     }
+    appendCredit = async (rows: Spreadsheet) => {
+        try {
+            const result = {
+                spreadsheetId: process.env.GOOGLE_SHEET_ID,
+                range: "'seazon-bot'",
+                valueInputOption: 'USER_ENTERED',
+                resource: {
+                    values: rows ,
+                },
+            }
+            const response = await this.sheets.spreadsheets.values.append(
+                result
+            )
+            console.log('response', response)
+        } catch (error) {
+            console.log('error', error)
+        }
+    }
+    appendNb = async (rows: Spreadsheet) => {
+        try {
+            const result = {
+                spreadsheetId: process.env.GOOGLE_SHEET_ID,
+                range: "'seazon-bot'!H5",
+                valueInputOption: 'USER_ENTERED',
+                resource: {
+                    values: rows,
+                },
+            }
+            const response = await this.sheets.spreadsheets.values.append(
+                result
+            )
+            console.log('response', response)
+        } catch (error) {
+            console.log('error', error)
+        }
+    }
 
     appendCommand = async (rows: Spreadsheet) => {
         try {

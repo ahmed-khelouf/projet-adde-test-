@@ -1,5 +1,5 @@
 import { Spreadsheet } from './models/Spreadsheet'
-import { createCommandRow } from './utils/GoogleSheetManager+utils'
+import { createAdditionCredit, createCommandRow, createNb } from './utils/GoogleSheetManager+utils'
 
 const rowSheet = new Spreadsheet([
     ['pomme', 'poire', 'fraise'],
@@ -35,3 +35,15 @@ const uneLigne = createCommandRow({
 })
 
 console.log('ma ligne: ', uneLigne[0].join(' | '))
+
+
+const toto  =createAdditionCredit({
+    startDate: '2022/05/02',
+   
+})
+console.log('ma ligne: ', toto[0].join(' | '))
+
+const yoyo = createNb({
+    nbPlat : 12
+})
+console.log('ma ligne: ', yoyo[0].join(' | '))

@@ -18,3 +18,29 @@ export const createCommandRow = (newOrder: SeazonOrder): Spreadsheet => {
     ]
     return new Spreadsheet([commandRow], 'rows')
 }
+
+interface SeazonCredit{
+    startDate: any
+}
+
+export const createAdditionCredit = (newOrder: SeazonCredit ): Spreadsheet => {
+    const creditRow: any[] = [
+        newOrder.startDate
+        
+       
+    ]
+    return new Spreadsheet([creditRow], 'rows')
+}
+
+
+interface SeazonNb{
+    nbPlat: any
+}
+export const createNb = (newOrder: SeazonNb ): Spreadsheet => {
+    const nbRow: any[] = [
+        newOrder.nbPlat
+        
+       
+    ]
+    return new Spreadsheet([nbRow], 'rows')
+}

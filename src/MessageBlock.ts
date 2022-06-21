@@ -195,3 +195,25 @@ export const OrderToModalView = (startDate: string): ModalView => {
         TEXT_INPUT_BLOCK('quantity', 'nombre de plats commandés:'),
     ])
 }
+
+export const OrderToModalViewCredit = (startDate: string): ModalView => {
+    return MODAL_BLOCK('Ajouter des credits ', 'ORDER_SEAZON_CREDIT', [
+        TEXT_BLOCK('toto:'),
+        DIVIDER_BLOCK,
+        DATE_INPUT_BLOCK(
+            'startDate',
+            'ajoute credit  (choisir le lundi):',
+            startDate
+        )
+    ])
+}
+
+export const OrderToModalViewNb = (): ModalView => {
+    return MODAL_BLOCK('nb plat de la semaine ', 'ORDER_SEAZON_NB', [
+        TEXT_BLOCK('TODO:'),
+        DIVIDER_BLOCK,
+        
+        TEXT_INPUT_BLOCK('nbPlat', 'nbPlat (par semaine):'),
+
+    ])
+}

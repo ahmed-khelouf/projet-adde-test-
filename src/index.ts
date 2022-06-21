@@ -10,13 +10,13 @@ import {
 import { handleUser } from './managers/UserManager'
 import { User } from './models/User'
 import { readUsers, writeUsers, writeWeekMenu } from './managers/SaveManager'
-import { mealToBlock, OrderToModalView } from './MessageBlock'
+import { mealToBlock, OrderToModalView, OrderToModalViewCredit, OrderToModalViewNb } from './MessageBlock'
 import { DateTime } from 'luxon'
 import { getMenuForDate } from './managers/MenuManager'
 import { GoogleSheetManager } from './managers/GoogleSheetManager'
 import { TEXT_BLOCK } from './utils/SlackBlockHelpers'
 import { toolresults } from 'googleapis/build/src/apis/toolresults'
-import { createCommandRow } from './utils/GoogleSheetManager+utils'
+import { createAdditionCredit, createCommandRow, createNb } from './utils/GoogleSheetManager+utils'
 
 // GlobalVar
 let users: Record<string, User> = {}
@@ -147,6 +147,53 @@ app.message(/(showdate)/, async ({ client, message, say }) => {
     say({ blocks })
 })
 
+app.shortcut('ORDER_SEAZON_NB', async ({ client, payload, ack }) => {
+    await ack()
+
+    const modal = OrderToModalViewNb()
+
+    client.views.open({ view: modal, trigger_id: payload.trigger_id })
+})
+
+
+
+app.view('ORDER_SEAZON_NB', async ({ view, ack }) => {
+    const {
+        state: { values },
+    } = view
+    const nbPlat = values['nbPlat']['nbPlat'].value
+    const nbPlatError = nbPlat
+    ? undefined
+    : { nbPlat: 'startDate is undefined.' }
+    if (nbPlatError){
+    const errors = { ...nbPlatError}
+        await ack({ response_action: 'errors', errors })
+    } else {
+        console.log('can insert order: ', nbPlat)
+        if (nbPlat)
+        console.log('INSERTING ROW')
+        
+        const row : any  = createNb({
+            nbPlat ,
+        })
+        await seazonGoogleManager.appendNb(row)
+    }
+    await ack()
+}
+
+// await ack()
+)
+app.shortcut('ORDER_SEAZON_CREDIT', async ({ client, payload, ack }) => {
+    await ack()
+    const nextWeekDate = DateTime.now()
+        .plus({ week: 1 })
+        .startOf('week')
+        .toFormat('yyyy-MM-dd')
+    const modal = OrderToModalViewCredit(nextWeekDate)
+
+    client.views.open({ view: modal, trigger_id: payload.trigger_id })
+})
+
 app.shortcut('ORDER_SEAZON_MEAL', async ({ client, payload, ack }) => {
     await ack()
     const nextWeekDate = DateTime.now()
@@ -157,6 +204,33 @@ app.shortcut('ORDER_SEAZON_MEAL', async ({ client, payload, ack }) => {
 
     client.views.open({ view: modal, trigger_id: payload.trigger_id })
 })
+app.view('ORDER_SEAZON_CREDIT', async ({ view, ack }) => {
+    const {
+        state: { values },
+    } = view
+    console.log(values['startDate']['startDate'])
+    const startDate = values['startDate']['startDate'].selected_date
+    const startDateError = startDate
+    ? undefined
+    : { startDate: 'startDate is undefined.' }
+    if (startDateError){
+    const errors = { ...startDateError}
+        await ack({ response_action: 'errors', errors })
+    } else {
+        console.log('can insert order: ', startDate)
+        if (startDate)
+        console.log('INSERTING ROW')
+        
+        const row  = createAdditionCredit({
+            startDate,
+        })
+        await seazonGoogleManager.appendCredit(row)
+    }
+    await ack()
+}
+
+// await ack()
+)
 
 app.view('SEAZON_ORDER', async ({ view, ack }) => {
     const {
@@ -186,7 +260,7 @@ app.view('SEAZON_ORDER', async ({ view, ack }) => {
         if (startDate && cost && quantity) {
             console.log('INSERTING ROW')
             const endDate = DateTime.fromISO(startDate)
-                .plus({ days: 6 })
+                .plus({ days: 5 })
                 .toFormat('yyyy-MM-dd')
             const costFloat = parseFloat(cost)
             const quantityInt = parseInt(quantity)
@@ -379,4 +453,9 @@ app.action(
     }
 )
 
+
+
+
 startMyApp()
+
+
