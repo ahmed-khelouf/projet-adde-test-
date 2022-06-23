@@ -10,13 +10,22 @@ import {
 import { handleUser } from './managers/UserManager'
 import { User } from './models/User'
 import { readUsers, writeUsers, writeWeekMenu } from './managers/SaveManager'
-import { mealToBlock, OrderToModalView, OrderToModalViewCredit, OrderToModalViewNb } from './MessageBlock'
+import {
+    mealToBlock,
+    OrderToModalView,
+    OrderToModalViewCredit,
+    OrderToModalViewNb,
+} from './MessageBlock'
 import { DateTime } from 'luxon'
 import { getMenuForDate } from './managers/MenuManager'
 import { GoogleSheetManager } from './managers/GoogleSheetManager'
 import { TEXT_BLOCK } from './utils/SlackBlockHelpers'
 import { toolresults } from 'googleapis/build/src/apis/toolresults'
-import { createAdditionCredit, createCommandRow, createNb } from './utils/GoogleSheetManager+utils'
+import {
+    createAdditionCredit,
+    createCommandRow,
+    createSeazonMealOrderRow,
+} from './utils/GoogleSheetManager+utils'
 
 // GlobalVar
 let users: Record<string, User> = {}
@@ -155,33 +164,37 @@ app.shortcut('ORDER_SEAZON_NB', async ({ client, payload, ack }) => {
     client.views.open({ view: modal, trigger_id: payload.trigger_id })
 })
 
+app.view(
+    'ORDER_SEAZON_NB',
+    async ({ view, ack, body }) => {
+        const {
+            state: { values },
+        } = view
+        const mealAmount = values['nbPlat']['nbPlat'].value
+        const nbPlatError = mealAmount
+            ? undefined
+            : { nbPlat: 'startDate is undefined.' }
+        if (nbPlatError) {
+            const errors = { ...nbPlatError }
+            await ack({ response_action: 'errors', errors })
+        } else {
+            console.log('can insert order: ', mealAmount)
 
-
-app.view('ORDER_SEAZON_NB', async ({ view, ack }) => {
-    const {
-        state: { values },
-    } = view
-    const nbPlat = values['nbPlat']['nbPlat'].value
-    const nbPlatError = nbPlat
-    ? undefined
-    : { nbPlat: 'startDate is undefined.' }
-    if (nbPlatError){
-    const errors = { ...nbPlatError}
-        await ack({ response_action: 'errors', errors })
-    } else {
-        console.log('can insert order: ', nbPlat)
-        if (nbPlat)
-        console.log('INSERTING ROW')
-        
-        const row : any  = createNb({
-            nbPlat ,
-        })
-        await seazonGoogleManager.appendNb(row)
+            if (mealAmount) {
+                const row: any = createSeazonMealOrderRow({
+                    date: DateTime.now().toFormat('yyyy-MM-dd'),
+                    mealAmount: parseInt(mealAmount),
+                })
+                await seazonGoogleManager.appendMealOrder(
+                    `'${body.user.id}'`,
+                    row
+                )
+            }
+        }
+        await ack()
     }
-    await ack()
-}
 
-// await ack()
+    // await ack()
 )
 app.shortcut('ORDER_SEAZON_CREDIT', async ({ client, payload, ack }) => {
     await ack()
@@ -204,32 +217,33 @@ app.shortcut('ORDER_SEAZON_MEAL', async ({ client, payload, ack }) => {
 
     client.views.open({ view: modal, trigger_id: payload.trigger_id })
 })
-app.view('ORDER_SEAZON_CREDIT', async ({ view, ack }) => {
-    const {
-        state: { values },
-    } = view
-    console.log(values['startDate']['startDate'])
-    const startDate = values['startDate']['startDate'].selected_date
-    const startDateError = startDate
-    ? undefined
-    : { startDate: 'startDate is undefined.' }
-    if (startDateError){
-    const errors = { ...startDateError}
-        await ack({ response_action: 'errors', errors })
-    } else {
-        console.log('can insert order: ', startDate)
-        if (startDate)
-        console.log('INSERTING ROW')
-        
-        const row  = createAdditionCredit({
-            startDate,
-        })
-        await seazonGoogleManager.appendCredit(row)
-    }
-    await ack()
-}
+app.view(
+    'ORDER_SEAZON_CREDIT',
+    async ({ view, ack }) => {
+        const {
+            state: { values },
+        } = view
+        console.log(values['startDate']['startDate'])
+        const startDate = values['startDate']['startDate'].selected_date
+        const startDateError = startDate
+            ? undefined
+            : { startDate: 'startDate is undefined.' }
+        if (startDateError) {
+            const errors = { ...startDateError }
+            await ack({ response_action: 'errors', errors })
+        } else {
+            console.log('can insert order: ', startDate)
+            if (startDate) console.log('INSERTING ROW')
 
-// await ack()
+            const row = createAdditionCredit({
+                startDate,
+            })
+            await seazonGoogleManager.appendCredit(row)
+        }
+        await ack()
+    }
+
+    // await ack()
 )
 
 app.view('SEAZON_ORDER', async ({ view, ack }) => {
@@ -271,7 +285,7 @@ app.view('SEAZON_ORDER', async ({ view, ack }) => {
                 mealQuantity: quantityInt,
                 users: [],
             })
-            await seazonGoogleManager.appendCommand(row)
+            await seazonGoogleManager.appendCommand(row, "'seazon-bot'")
         }
         await ack()
     }
@@ -317,28 +331,41 @@ app.message(/(total)/, async ({ client, message, say }) => {
     }
 })
 
+// app.message(
+//     /(?:commande|commandé) ([0-9]*)(?: ?\w? ?)*( ?(?:[0-9]{4})-(?:1[0-2]|0[1-9])-(?:3[01]|0[1-9]|[12][0-9]))/,
+//     async ({ context, body, client, message, say }) => {
+//         if (!isGenericMessageEvent(message)) return
+//         handleUser(message.user, users, client)
+//         const mealAmount = context.matches[1]
+//         const order = createSeazonMealOrderRow({
+//             date: context.matches[2],
+//             mealAmount,
+//         })
+//         console.log('order: ', order)
+
+//         seazonGoogleManager.appendMealOrder(`\'${message.user}\'`, order)
+//         // insert the order in the spreadsheet
+//     }
+// )
 app.message(
-    /(commande|commandé) ([0-9]*)/,
-    async ({ context, client, message, say }) => {
+    /(?:commande|commandé) ([0-9]*)(.*)?/,
+    async ({ context, body, client, message, say }) => {
         if (!isGenericMessageEvent(message)) return
         handleUser(message.user, users, client)
-        users[message.user].mealsByWeek = parseInt(context.matches[2])
-        await writeUsers(users)
-        await say(
-            `voila <@${message.user}>, tu as commandé ${
-                users[message.user].mealsByWeek
-            } plats cette semaine!`
-        )
-        const total =
-            users[message.user].credits - users[message.user].mealsByWeek
-        await say(
-            `voila <@${message.user}> ${total} nombre de credits restant !`
-        )
-        if (users[message.user].mealsByWeek > users[message.user].credits) {
-            await say(
-                `voila <@${message.user}> TU ES ENDETTE DE  ${total} CREDIT `
+        const matchDate =
+            context.matches[2] &&
+            context.matches[2].match(
+                /((?:[0-9]{4})-(?:1[0-2]|0[1-9])-(?:3[01]|0[1-9]|[12][0-9]))/
             )
+        let date = DateTime.local().toFormat('yyyy-MM-dd')
+        if (matchDate) {
+            date = matchDate[1]
         }
+        const mealAmount = context.matches[1]
+        const order = createSeazonMealOrderRow({ date, mealAmount })
+        console.log('order: ', order)
+        seazonGoogleManager.appendMealOrder(`\'${message.user}\'`, order)
+        // insert the order in the spreadsheet
     }
 )
 
@@ -453,9 +480,4 @@ app.action(
     }
 )
 
-
-
-
 startMyApp()
-
-

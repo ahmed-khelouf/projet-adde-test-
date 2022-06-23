@@ -11,6 +11,7 @@ const TOKEN_PATH = 'token.json'
 const MAJOR_DIMENSION = 'rows'
 const SEAZON_BOT_USERS_SPREADSHEET_RANGE = "'seazon-bot'"
 const SEAZON_USERS_SPREADSHEET_RANGE = "'seazon'"
+const SEAZON_USER_COMMAND_COLUMNS = 'A4:C1001'
 
 const USERNAME_ROW = 0
 const CREDITS_ROW = 2
@@ -64,7 +65,7 @@ export class GoogleSheetManager implements GoogleSheetManager {
                 range: "'seazon-bot'",
                 valueInputOption: 'USER_ENTERED',
                 resource: {
-                    values: rows ,
+                    values: rows,
                 },
             }
             const response = await this.sheets.spreadsheets.values.append(
@@ -75,11 +76,11 @@ export class GoogleSheetManager implements GoogleSheetManager {
             console.log('error', error)
         }
     }
-    appendNb = async (rows: Spreadsheet) => {
+    appendMealOrder = async (sheet: string, rows: Spreadsheet) => {
         try {
             const result = {
                 spreadsheetId: process.env.GOOGLE_SHEET_ID,
-                range: "'seazon-bot'!H5",
+                range: `${sheet}!${SEAZON_USER_COMMAND_COLUMNS}`,
                 valueInputOption: 'USER_ENTERED',
                 resource: {
                     values: rows,
@@ -94,11 +95,11 @@ export class GoogleSheetManager implements GoogleSheetManager {
         }
     }
 
-    appendCommand = async (rows: Spreadsheet) => {
+    appendCommand = async (rows: Spreadsheet, inSheet: string) => {
         try {
             const result = {
                 spreadsheetId: process.env.GOOGLE_SHEET_ID,
-                range: "'seazon-bot'",
+                range: inSheet,
                 valueInputOption: 'USER_ENTERED',
                 resource: {
                     values: rows,
@@ -113,13 +114,14 @@ export class GoogleSheetManager implements GoogleSheetManager {
         }
     }
 
-    listPreviousOrders = async (): Promise<MealOrder[]> => {
-        let orders: MealOrder[] = []
-
+    getSpreadsheet = async (
+        range: string,
+        majorDimension: 'rows' | 'columns' = MAJOR_DIMENSION
+    ): Promise<Spreadsheet> => {
         const response = await this.sheets.spreadsheets.values.get({
             spreadsheetId: process.env.GOOGLE_SHEET_ID,
-            range: SEAZON_USERS_SPREADSHEET_RANGE,
-            majorDimension: MAJOR_DIMENSION,
+            range,
+            majorDimension,
         })
         if (
             response &&
@@ -127,78 +129,57 @@ export class GoogleSheetManager implements GoogleSheetManager {
             response.data.values &&
             response.data.values.length > 0
         ) {
-            const seazonSheet = new Spreadsheet(
-                response.data.values,
-                MAJOR_DIMENSION
-            )
+            return new Spreadsheet(response.data.values, majorDimension)
+        }
+        throw new Error('No data found.')
+    }
+    listPreviousOrders = async (): Promise<MealOrder[]> => {
+        let orders: MealOrder[] = []
 
-            const startDateColumn = seazonSheet.column(
-                ORDER_MEAL_START_DATE_COLUMN
-            )
-            const endDateColumn = seazonSheet.column(ORDER_MEAL_END_DATE_COLUMN)
-            const costColumn = seazonSheet.column(ORDER_MEAL_COST_COLUMN)
-            const quantityColumn = seazonSheet.column(
-                ORDER_MEAL_QUANTITY_COLUMN
-            )
-            const orderSheet = new Spreadsheet(
-                [startDateColumn, endDateColumn, costColumn, quantityColumn],
-                'columns'
-            )
-            for (
-                let rowIndex = 4;
-                rowIndex < startDateColumn.length;
-                rowIndex++
-            ) {
-                const currentRow = orderSheet.row(rowIndex)
-                const isAValidORder = currentRow.every((cell) => cell !== '')
-                if (isAValidORder) {
-                    const newOrder: MealOrder = {
-                        startDate: currentRow[ORDER_MEAL_START_DATE_COLUMN],
-                        endDate: currentRow[ORDER_MEAL_END_DATE_COLUMN],
-                        cost: currentRow[ORDER_MEAL_COST_COLUMN],
-                        quantity: currentRow[ORDER_MEAL_QUANTITY_COLUMN],
-                    }
-                    // orders.push(newOrder) ; equivalent to line below
-                    orders = [...orders, newOrder]
+        const seazonSheet = await this.getSpreadsheet(
+            SEAZON_USERS_SPREADSHEET_RANGE,
+            'rows'
+        )
+        const startDateColumn = seazonSheet.column(ORDER_MEAL_START_DATE_COLUMN)
+        const endDateColumn = seazonSheet.column(ORDER_MEAL_END_DATE_COLUMN)
+        const costColumn = seazonSheet.column(ORDER_MEAL_COST_COLUMN)
+        const quantityColumn = seazonSheet.column(ORDER_MEAL_QUANTITY_COLUMN)
+        const orderSheet = new Spreadsheet(
+            [startDateColumn, endDateColumn, costColumn, quantityColumn],
+            'columns'
+        )
+        for (let rowIndex = 4; rowIndex < startDateColumn.length; rowIndex++) {
+            const currentRow = orderSheet.row(rowIndex)
+            const isAValidORder = currentRow.every((cell) => cell !== '')
+            if (isAValidORder) {
+                const newOrder: MealOrder = {
+                    startDate: currentRow[ORDER_MEAL_START_DATE_COLUMN],
+                    endDate: currentRow[ORDER_MEAL_END_DATE_COLUMN],
+                    cost: currentRow[ORDER_MEAL_COST_COLUMN],
+                    quantity: currentRow[ORDER_MEAL_QUANTITY_COLUMN],
                 }
+                // orders.push(newOrder) ; equivalent to line below
+                orders = [...orders, newOrder]
             }
         }
+
         return orders
     }
-    listMoneyByUSer = () => {
-        return new Promise<SheetCredit[]>((resolve, reject) => {
-            this.sheets.spreadsheets.values.get(
-                {
-                    spreadsheetId: process.env.GOOGLE_SHEET_ID,
-                    range: SEAZON_USERS_SPREADSHEET_RANGE,
-                    majorDimension: MAJOR_DIMENSION,
-                },
-                (err, res) => {
-                    if (err) return reject(err)
-                    if (res && res.data && res.data.values) {
-                        const sheet = new Spreadsheet(
-                            res.data.values,
-                            MAJOR_DIMENSION
-                        )
-                        if (sheet.length) {
-                            // filter users and their credits
-                            const users = sheet
-                                .row(USERNAME_ROW)
-                                .reduce<number[]>((users, _, index) => {
-                                    if (index % 2 === 0) {
-                                        users.push(index)
-                                    }
-                                    return users
-                                }, [])
-                                .map(makeUser(sheet))
-                            resolve(users)
-                        } else {
-                            reject(new Error('No data found.'))
-                        }
-                    }
+    listMoneyByUSer = async () => {
+        const sheet = await this.getSpreadsheet(
+            SEAZON_USERS_SPREADSHEET_RANGE,
+            'rows'
+        )
+        const users = sheet
+            .row(USERNAME_ROW)
+            .reduce<number[]>((users, _, index) => {
+                if (index % 2 === 0) {
+                    users.push(index)
                 }
-            )
-        })
+                return users
+            }, [])
+            .map(makeUser(sheet))
+        return users
     }
 }
 
